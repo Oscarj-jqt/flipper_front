@@ -23,7 +23,6 @@ import { Splash } from "@modules/splash";
 import { Pause } from "@modules/pause";
 import { GameOver } from "@modules/gameOver";
 import { Leaderboard } from "@modules/leaderboard";
-import { Menu } from "@modules/menu";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UI — rôle du PLAYFIELD : il reste sur le splash pendant TOUTE la navigation
@@ -42,11 +41,9 @@ const splashScreen: ScreenFactory = (host) => {
 
 const factories: ScreenFactoryMap = {
   splash: splashScreen,
-  menu: (host) => {
-    const menu = new Menu();
-    menu.mount(host);
-    return { stop: () => menu.unmount() };
-  },
+  // Le menu se joue sur le backglass : le playfield reste sur le splash (cf.
+  // l'en-tête de ce fichier). Monter la scène 3D du menu ici était un bug.
+  menu: splashScreen,
   identification: splashScreen,
   leaderboard: (host) => {
     const leaderboard = new Leaderboard();
@@ -78,7 +75,22 @@ const factories: ScreenFactoryMap = {
   gameOver: (host) => {
     const go = new GameOver();
     go.mount(host);
-    return { stop: () => go.unmount() };
+    // Curseur aux boutons borne : gauche/droite choisissent, vert valide
+    // (Rejouer / Leaderboard / Menu).
+    const unbindNav = bindScreenNav(
+      {
+        left: () => go.moveCursor(-1),
+        right: () => go.moveCursor(1),
+        confirm: () => go.confirm(),
+      },
+      { sync: matchSync, keyboard: true },
+    );
+    return {
+      stop: () => {
+        unbindNav();
+        go.unmount();
+      },
+    };
   },
 };
 
@@ -200,24 +212,20 @@ async function bootstrap() {
       );
       sceneManager.onUpdate((deltaTime) => tableInteractions.update(deltaTime));
 
-      const gameFlow = new GameFlow(
-        physics,
-        ball,
-        colliders,
-        matchSync,
-        () => {
-          gameStore.send({ type: "GAME_OVER" });
-        },
-        isDevLocalSyncEnabled(),
-      );
+      const gameFlow = new GameFlow(physics, ball, colliders, matchSync, () => {
+        gameStore.send({ type: "GAME_OVER" });
+      });
       sceneManager.onUpdate((deltaTime) => gameFlow.update(deltaTime));
       let previousState = gameStore.getState().value;
       gameStore.subscribe((snapshot) => {
+        const isPlaying = snapshot.value === "playing";
         const startsNewGame =
-          snapshot.value === "playing" && previousState !== "playing" && previousState !== "paused";
+          isPlaying && previousState !== "playing" && previousState !== "paused";
         if (startsNewGame) {
           gameFlow.reset();
         }
+        // Scoring/drain actifs uniquement en partie (pas au boot ni dans les menus).
+        gameFlow.setActive(isPlaying);
         previousState = snapshot.value;
       });
       if (isDevLocalSyncEnabled()) {
