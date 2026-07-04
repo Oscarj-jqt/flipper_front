@@ -111,9 +111,7 @@ export async function createPlayfieldScene(): Promise<PlayfieldScene> {
 
   const ball = new Ball(physics, {
     id: "main-ball",
-    // Dans le couloir de lancement (zone plunger z ∈ [-14.0, -10.2]) : la bille
-    // y attend (gelée) jusqu'au lancement, au lieu de tomber sur le plateau.
-    initialPosition: { x: -7.6, y: 4.92, z: -12.5 },
+    initialPosition: { x: -7.6, y: 4.92, z: -8.9 },
     radius: 0.35,
     mass: 0.22,
     friction: 0.04,
