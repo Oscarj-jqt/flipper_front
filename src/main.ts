@@ -89,6 +89,13 @@ async function bootstrap() {
   // [Music] ici on gere la music : activation du service audio au boot du playfield
   gameAudio.enable();
   applyDevBoot(gameStore);
+  gameStore.subscribe((snapshot) => {
+    if (snapshot.value === "playing") {
+      gameAudio.playBackgroundMusic();
+    } else {
+      gameAudio.pauseBackgroundMusic();
+    }
+  });
 
   // 1. Mode follower : le backend décide, le front applique. On branche le bus
   //    borne sur la SM (nav:state + match:state) et on ouvre la connexion

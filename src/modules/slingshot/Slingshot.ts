@@ -3,6 +3,7 @@ import type RAPIER from "@dimforge/rapier3d-compat";
 import type { RapierPhysicsAdapter } from "@physics/RapierPhysicsAdapter";
 import type { Ball } from "@modules/ball/Ball";
 import type { NamedPhysicsCollider } from "@modules/table/BlenderPhysicsColliders";
+import { gameAudio } from "@services/gameAudio";
 
 export interface SlingshotOptions {
   /** Impulsion de base (N·s) appliquée même à vitesse nulle, façon ressort précontraint. */
@@ -137,5 +138,6 @@ export class Slingshot {
     impulse.y += this.popImpulse;
 
     this.ball.applyImpulse({ x: impulse.x, y: impulse.y, z: impulse.z });
+    gameAudio.playSlingshot();
   }
 }

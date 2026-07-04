@@ -2,6 +2,7 @@ import type { Ball } from "@modules/ball";
 import type { NamedPhysicsCollider } from "@modules/table/BlenderPhysicsColliders";
 import type { RapierPhysicsAdapter } from "@physics/RapierPhysicsAdapter";
 import type { MatchSyncAdapter } from "@services/matchSync";
+import { gameAudio } from "@services/gameAudio";
 
 type ColliderMap = Record<string, NamedPhysicsCollider>;
 
@@ -128,6 +129,8 @@ export class GameFlow {
     if (!isInDrainLane && !isOutOfTable && !isFallen) return;
 
     this.isDraining = true;
+    gameAudio.playBallLost();
+
     if (!this.localAuthority) {
       this.sync.dispatch({
         type: "game:event",
