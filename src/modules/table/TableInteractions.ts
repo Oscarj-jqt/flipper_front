@@ -128,12 +128,13 @@ export class TableInteractions {
       this.boostRamp(name);
     } else if (SPINNERS.has(name)) {
       this.spinMushroom(name);
+      gameAudio.playMushroom();
       this.randomSpinnerKick();
     } else if (name === "Bump") {
       this.bumpFrom(name, 0.62, 0.05);
       this.startShake();
-      // [Music] ici on gere la music : son bumper sur le bumper central
-      gameAudio.playBumper();
+      // [Music] ici on gere la music : son POW sur le bumper central
+      gameAudio.playObstacleBump();
     } else if (name in TUNNEL_PAIRS) {
       if (import.meta.env.DEV) {
         console.debug("[Tunnel] collision détectée avec", name, {
@@ -421,6 +422,8 @@ export class TableInteractions {
     if (import.meta.env.DEV) {
       console.debug("[Tunnel] téléportation démarrée :", from, "->", to);
     }
+
+    gameAudio.playTeleport();
 
     const velocity = this.ball.getBody()?.linvel();
     this.tunnelTeleport = {
