@@ -126,20 +126,6 @@ export class GameFlow {
     this.isDraining = true;
     gameAudio.playBallLost();
 
-    if (!this.localAuthority) {
-      this.sync.dispatch({
-        type: "game:event",
-        eventId: this.nextEventId(),
-        event: "ball_lost",
-        occurredAt: Date.now(),
-      });
-      globalThis.setTimeout(() => {
-        this.ball.reset();
-        this.isDraining = false;
-      }, 700);
-      return;
-    }
-
     this.combo = 0;
     this.lives = Math.max(0, this.lives - 1);
     this.sync.publish({ type: "ball:lost", livesRemaining: this.lives });
