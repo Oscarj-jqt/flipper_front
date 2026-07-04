@@ -2,6 +2,7 @@ import type { Ball } from "@modules/ball";
 import type { NamedPhysicsCollider } from "@modules/table/BlenderPhysicsColliders";
 import type { RapierPhysicsAdapter } from "@physics/RapierPhysicsAdapter";
 import type { MatchSyncAdapter } from "@services/matchSync";
+import { gameAudio } from "@services/gameAudio";
 
 type ColliderMap = Record<string, NamedPhysicsCollider>;
 
@@ -123,6 +124,8 @@ export class GameFlow {
     if (!isInDrainLane && !isOutOfTable && !isFallen) return;
 
     this.isDraining = true;
+    gameAudio.playBallLost();
+
     this.combo = 0;
     this.lives = Math.max(0, this.lives - 1);
     this.sync.publish({ type: "ball:lost", livesRemaining: this.lives });
@@ -135,7 +138,7 @@ export class GameFlow {
       return;
     }
 
-    setTimeout(() => {
+    globalThis.setTimeout(() => {
       this.ball.reset();
       this.isDraining = false;
     }, 700);

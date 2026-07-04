@@ -3,6 +3,7 @@ import type RAPIER from "@dimforge/rapier3d-compat";
 import type { RapierPhysicsAdapter } from "@physics/RapierPhysicsAdapter";
 import type { Ball } from "@modules/ball/Ball";
 import type { NamedPhysicsCollider } from "@modules/table/BlenderPhysicsColliders";
+import { gameAudio } from "@services/gameAudio";
 
 export interface SlingshotOptions {
   /** Impulsion de base (N·s) appliquée même à vitesse nulle, façon ressort précontraint. */
@@ -127,7 +128,7 @@ export class Slingshot {
     pushDirection.normalize();
 
     const linvel = body.linvel();
-    const incomingSpeed = Math.sqrt(linvel.x ** 2 + linvel.y ** 2 + linvel.z ** 2);
+    const incomingSpeed = new THREE.Vector3(linvel.x, linvel.y, linvel.z).length();
 
     // Réponse "ressort" : une base fixe + un terme proportionnel à la vitesse
     // d'arrivée, pour que la bille reparte plus fort si elle arrive vite.
@@ -137,5 +138,6 @@ export class Slingshot {
     impulse.y += this.popImpulse;
 
     this.ball.applyImpulse({ x: impulse.x, y: impulse.y, z: impulse.z });
+    gameAudio.playSlingshot();
   }
 }

@@ -85,7 +85,7 @@ export class Ball {
 
   private clampLinearVelocity(body: RAPIER.RigidBody): void {
     const velocity = body.linvel();
-    const speed = Math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2);
+    const speed = new THREE.Vector3(velocity.x, velocity.y, velocity.z).length();
     const speedLimit = this.temporaryMaxLinearSpeed ?? this.maxLinearSpeed;
     if (speed <= speedLimit) return;
 
@@ -134,31 +134,7 @@ export class Ball {
     this.temporaryMaxLinearSpeed = null;
     this.temporarySpeedLimitRemaining = 0;
 
-    // La bille attend dans le couloir de lancement, gelée, jusqu'à ce que le
-    // joueur la lance au plunger : sans ça elle tombe et roule à travers les
-    // bumpers (qui marquent des points) avant même le début effectif du jeu.
-    this.freeze();
-
     this.updateFromPhysics();
-  }
-
-  /**
-   * Gèle la bille hors de la simulation : ni chute, ni collision (donc aucun
-   * score involontaire). Utilisé tant qu'elle attend dans le couloir de lancement.
-   */
-  freeze(): void {
-    const body = this.physics.getBody(this.bodyId);
-    if (!body) return;
-    body.setLinvel({ x: 0, y: 0, z: 0 }, true);
-    body.setAngvel({ x: 0, y: 0, z: 0 }, true);
-    body.setEnabled(false);
-  }
-
-  /** Réintègre la bille à la simulation — appelé au lancement (plunger). */
-  unfreeze(): void {
-    const body = this.physics.getBody(this.bodyId);
-    if (!body) return;
-    body.setEnabled(true);
   }
 
   dispose(): void {
