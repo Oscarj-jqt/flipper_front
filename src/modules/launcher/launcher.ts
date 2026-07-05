@@ -1,5 +1,14 @@
-import * as THREE from "three";
 import type { Ball } from "@modules/ball";
+
+const LAUNCH_ZONE_CENTER = {
+  x: -7.6,
+  z: -13.4,
+} as const;
+
+const DEFAULT_ZONE_HALF_WIDTH = 0.45;
+const DEFAULT_ZONE_BACK_MARGIN = 0.6;
+// La bille démarre à z = -8.9, soit 4.5 unités devant le centre du lanceur.
+const DEFAULT_ZONE_FRONT_MARGIN = 4.8;
 
 export interface LauncherOptions {
   /** Demi-largeur (axe X) de la zone de lancement, en unités monde. */
@@ -11,9 +20,8 @@ export interface LauncherOptions {
 }
 
 /**
- * Plunger (lanceur à ressort) sans asset 3D dédié : la bille passe sous le
- * tunnel de lancement donc le plunger n'est jamais visible, seul le
- * comportement physique compte.
+ * Plunger (lanceur à ressort) sans asset 3D dédié : seul le comportement
+ * physique compte.
  *
  * - Appuyer sur Espace arme instantanément le lanceur à sa puissance maximale.
  * - Relâcher Espace frappe la bille avec une impulsion fixe vers l'avant
@@ -22,57 +30,39 @@ export interface LauncherOptions {
  *   présente dans le couloir de lancement.
  */
 export class Launcher {
-  mesh: THREE.Mesh;
   // State
   private isArmed = false;
 
-  private readonly zoneCenter: THREE.Vector2;
+  private readonly zoneCenterX: number;
+  private readonly zoneCenterZ: number;
   private readonly zoneHalfWidth: number;
   private readonly zoneBackMargin: number;
   private readonly zoneFrontMargin: number;
 
-  private ball: Ball;
+  private readonly ball: Ball;
 
-  private initialZ: number;
   // Constructor
   constructor(ball: Ball, options: LauncherOptions = {}) {
     this.ball = ball;
 
-    const geometry = new THREE.CylinderGeometry(0.2, 0.2, 2, 16);
-    const material = new THREE.MeshStandardMaterial({ color: 0x888888 });
-
-    this.mesh = new THREE.Mesh(geometry, material);
-
-    // Position
-    this.mesh.position.set(-7.6, 4.9, -13.4);
-
-    // Inclinaison
-    // léger angle vers la table
-    this.mesh.rotation.x = -Math.PI / 3; // ~ -60°
-    this.mesh.rotation.z = 0.15; // léger décalage esthétique
-
-    this.mesh.castShadow = true;
-    this.mesh.receiveShadow = true;
-
-    this.initialZ = this.mesh.position.z;
-
-    // Zone de lancement : couloir étroit autour du plunger. La bille y
+    // Zone de lancement : couloir étroit autour du plunger virtuel. La bille y
     // démarre (cf. `initialPosition` de `Ball`) et doit y rester pour que le
-    // plunger puisse s'armer/frapper.
-    this.zoneCenter = new THREE.Vector2(this.mesh.position.x, this.mesh.position.z);
-    this.zoneHalfWidth = options.zoneHalfWidth ?? 0.45;
-    this.zoneBackMargin = options.zoneBackMargin ?? 0.6;
-    this.zoneFrontMargin = options.zoneFrontMargin ?? 3.2;
+    // lanceur puisse s'armer/frapper.
+    this.zoneCenterX = LAUNCH_ZONE_CENTER.x;
+    this.zoneCenterZ = LAUNCH_ZONE_CENTER.z;
+    this.zoneHalfWidth = options.zoneHalfWidth ?? DEFAULT_ZONE_HALF_WIDTH;
+    this.zoneBackMargin = options.zoneBackMargin ?? DEFAULT_ZONE_BACK_MARGIN;
+    this.zoneFrontMargin = options.zoneFrontMargin ?? DEFAULT_ZONE_FRONT_MARGIN;
   }
 
   /** Vrai si la bille est actuellement dans le couloir de lancement. */
   isBallInLaunchZone(): boolean {
     const position = this.ball.mesh.position;
 
-    const dx = Math.abs(position.x - this.zoneCenter.x);
+    const dx = Math.abs(position.x - this.zoneCenterX);
     if (dx > this.zoneHalfWidth) return false;
 
-    const dz = position.z - this.zoneCenter.y;
+    const dz = position.z - this.zoneCenterZ;
     return dz >= -this.zoneBackMargin && dz <= this.zoneFrontMargin;
   }
 
@@ -113,7 +103,7 @@ export class Launcher {
     this.ball.applyImpulse({ x: 0, y: 0, z: 2.2 });
   }
 
-  update(_deltaTime?: number) {
+  update(_deltaTime?: number): void {
     if (this.isArmed) {
       // Sécurité : si la bille sort du couloir pendant l'armement, on
       // annule proprement (le plunger ne doit agir que sur une bille présente).
@@ -121,14 +111,5 @@ export class Launcher {
         this.isArmed = false;
       }
     }
-
-    // Animation (la compression visuelle n'est jamais rendue, cf. docstring,
-    // mais reste utile pour du debug / une future GUI).
-    const compression = this.isArmed ? 1 : 0;
-    this.mesh.position.z = this.initialZ + compression * 0.75;
-  }
-
-  addTo(scene: THREE.Scene) {
-    scene.add(this.mesh);
   }
 }
